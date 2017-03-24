@@ -196,7 +196,7 @@ void handle_alarm(int sig){
     fetch_guard.unlock();
     fetch_cv.notify_all();
     
-    alarm(10);
+    alarm(PERIOD_FETCH);
 }
 
 size_t write_data(char *ptr, size_t size, size_t nmemb, void *userdata) {
@@ -432,7 +432,7 @@ int main(int argc, const char * argv[]) {
     assert(rc == 0);
     
     signal( SIGALRM, handle_alarm);
-    alarm( 10 );
+    alarm( PERIOD_FETCH );
     while(do_task){
         
     }

@@ -24,4 +24,4 @@ The program operates in 5 main stages.
 5) Cleanup
     A SIGINT or SIGTERM triggers cleanup. This cancels threads and closes all relevent objects, and exits gracefullly. 
 
-A sigalarm function  controls when a batch is added to the fetch_queue. 
+A sigalarm function controls when a batch is added to the fetch_queue and controls the output file. 
