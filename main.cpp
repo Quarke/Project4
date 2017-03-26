@@ -34,6 +34,7 @@ size_t write_data(char *ptr, size_t size, size_t nmemb, void *userdata);
 void * parse_website(void * v);
 void * fetch_website(void * v);
 void * write_output(void * v);
+void create_html_header(int);
 
 struct WEBSITE {
     string content;
@@ -164,25 +165,17 @@ void handle_exit(int sig) {
 void handle_alarm(int sig){
     file_num++;
     
-    
-    //the messiest html writing you will ever see
-    f_outfile << "</tbody></table>";
-    f_outfile << "</body></html>";
+    f_outfile << "var data={labels:labelArray,datasets: [{data: dataArray, fillColor: 'rgba(220,220,220,0.6)', label:'test'}]};" << endl;
+    f_outfile << "var option={responsive:true};" << endl;
+    f_outfile << "$(function(){var ctx = document.getElementById('myChart').getContext('2d');" << endl;
+    f_outfile << "var myRadarChart = new Chart(ctx).Radar(data,option);";
+    f_outfile << "});" << endl;
+    f_outfile << "</script></body></html>";
     f_outfile.close();
     
     //close previous, make new
     
-    f_outfile.open(to_string(file_num) + ".html");
-    f_outfile << "<!DOCTYPE html><html><head><title>Page Title</title>";
-    
-    f_outfile << "<script type=\"text/javascript\" charset=\"utf8\" src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js\"></script>";
-    
-    f_outfile << "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://cdn.datatables.net/1.10.13/css/jquery.dataTables.min.css\">";
-    f_outfile << "<script type=\"text/javascript\" charset=\"utf8\" src=\"https://cdn.datatables.net/1.10.13/js/jquery.dataTables.min.js\"></script>";
-    
-    f_outfile << "<script>$(document).ready(function(){$('#example').DataTable();});</script>";
-    f_outfile << "</head><body><table id=\"example\" class=\"display\" cellspacing=\"0\" width=\"100%\"><thead><tr>";
-    f_outfile << "<th>Time</th><th>Phrase</th><th>Site</th><th>Count</th></tr></thead>";
+    create_html_header(file_num);
     
     if(!f_outfile){
         cout << "could not open file to write output, exiting" << endl;
@@ -244,7 +237,6 @@ void * parse_website(void * v){
             o.term = searches[i];
             o.site = info.url;
             o.count = counts[i];
-            
             
             unique_lock<mutex> output_guard(output_m);
             output_queue.push(o);
@@ -308,6 +300,9 @@ void * write_output(void * v){
         guard.unlock();
         output_cv.notify_all();
         
+        f_outfile << "labelArray.push(\"" << info.term << "\");" << endl;
+        f_outfile << "dataArray.push(" << info.count << ");" << endl;
+        /*
         f_outfile << "<tr>";
         
         f_outfile << "<td>" << info.time << "</td>";
@@ -316,9 +311,36 @@ void * write_output(void * v){
         f_outfile << "<td>" << info.count<< "</td>";
         
         f_outfile << "</tr>";
+        */
     }
     
     return 0;
+}
+
+void create_html_header(int file_num) {
+    cout << "Creating file: " << file_num << endl;
+    f_outfile.open(to_string(file_num) + ".html");
+    if(!f_outfile){
+        cout << "could not open file to write output, exiting" << endl;
+        exit(1);
+    }
+    f_outfile << "<!DOCTYPE html><html><head><title>Keyword Krawler</title>";
+    
+    f_outfile << "<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.3.0/css/mdb.min.css\">";
+
+    f_outfile << "<script type=\"text/javascript\" charset=\"utf8\" src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js\"></script>";
+    f_outfile << "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js\"></script>";
+
+    f_outfile << "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.3.0/js/mdb.min.js\"></script>";
+
+    //f_outfile << "<script>$(document).ready(function(){$('#example').DataTable();});</script>";
+    
+    //f_outfile << "</head><body><table id=\"example\" class=\"display\" cellspacing=\"0\" width=\"100%\"><thead><tr>";
+
+    //f_outfile << "<th>Time</th><th>Phrase</th><th>Site</th><th>Count</th></tr></thead>";
+    f_outfile << "</head><body><canvas id='myChart'></canvas><script>";
+
+    f_outfile << "var labelArray = [];" << "var dataArray = [];";
 }
 
 int main(int argc, const char * argv[]) {
@@ -385,25 +407,8 @@ int main(int argc, const char * argv[]) {
     
     // two arrays with the resource information
     // first round start
-    
-    
-    f_outfile.open("0.html");
-    if(!f_outfile){
-        cout << "could not open file to write output, exiting" << endl;
-        exit(1);
-    }
-    f_outfile << "<!DOCTYPE html><html><head><title>Page Title</title>";
-    
-    f_outfile << "<script type=\"text/javascript\" charset=\"utf8\" src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js\"></script>";
 
-    f_outfile << "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://cdn.datatables.net/1.10.13/css/jquery.dataTables.min.css\">";
-    f_outfile << "<script type=\"text/javascript\" charset=\"utf8\" src=\"https://cdn.datatables.net/1.10.13/js/jquery.dataTables.min.js\"></script>";
-    
-    f_outfile << "<script>$(document).ready(function(){$('#example').DataTable();});</script>";
-    
-    f_outfile << "</head><body><table id=\"example\" class=\"display\" cellspacing=\"0\" width=\"100%\"><thead><tr>";
-
-    f_outfile << "<th>Time</th><th>Phrase</th><th>Site</th><th>Count</th></tr></thead>";
+    create_html_header(0);
     
     for(int i = 0; i < (int)sites.size(); i++){
         //fetch_website(sites[i], search, search_size);
