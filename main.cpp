@@ -165,22 +165,39 @@ void handle_exit(int sig) {
 void handle_alarm(int sig){
     file_num++;
     
-    f_outfile << "var data={labels:labelArray,datasets: [{data: dataArray, fillColor: 'rgba(220,220,220,0.6)', label:'test'}]};" << endl;
-    f_outfile << "var option={responsive:true};" << endl;
-    f_outfile << "$(function(){var ctx = document.getElementById('myChart').getContext('2d');" << endl;
-    f_outfile << "var myRadarChart = new Chart(ctx).Radar(data,option);";
-    f_outfile << "});" << endl;
-    f_outfile << "</script></body></html>";
-    f_outfile.close();
-    
+    f_outfile << "    for(var i=0; i < data.length; i++) {" << endl
+              << "      obj = data[i];" << endl
+              << "      labels.push(obj.term);" << endl
+              << "      if (dataDict[obj.site] === undefined) {" << endl
+              << "        dataDict[obj.site] = {" << endl
+              << "          label: obj.site," << endl
+              << "          data: []," << endl
+              << "          fillColor: '#'+Math.random().toString(16).substr(-6)" << endl
+              << "        }" << endl
+              << "      }" << endl
+              << "      dataDict[obj.site].data.push(obj.count);" << endl
+              << "    }" << endl
+              << "    labels = Array.from(new Set(labels));" << endl
+              << "    for (var key in dataDict) {" << endl
+              << "      datasets.push(dataDict[key]);" << endl
+              << "    }" << endl
+              << "    var data = {" << endl
+              << "      labels: labels," << endl
+              << "      datasets: datasets," << endl
+              << "    };" << endl
+              << "    $(function() {" << endl
+              << "      var ctx = document.getElementById('myChart').getContext('2d');" << endl
+              << "      var myRadarChart = new Chart(ctx).Radar(data,option); " << endl
+              << "    });" << endl
+              << "  </script>" << endl
+              << "</body>" << endl
+              << "</html>" << endl
+              ;
+
     //close previous, make new
-    
+    f_outfile.close();
     create_html_header(file_num);
     
-    if(!f_outfile){
-        cout << "could not open file to write output, exiting" << endl;
-        exit(1);
-    }
     cout << "refill queue" << endl;
     unique_lock<mutex> fetch_guard(fetch_m);
     for(int i = 0; i < (int)sites.size(); i++){
@@ -242,7 +259,6 @@ void * parse_website(void * v){
             output_queue.push(o);
             output_guard.unlock();
             output_cv.notify_all();
-            //printf("%s, %s, %s, %d\n", time_str.c_str(), searches[i].c_str(), info.url.c_str(), counts[i]);
         }
     }
     return 0;
@@ -300,18 +316,13 @@ void * write_output(void * v){
         guard.unlock();
         output_cv.notify_all();
         
-        f_outfile << "labelArray.push(\"" << info.term << "\");" << endl;
-        f_outfile << "dataArray.push(" << info.count << ");" << endl;
-        /*
-        f_outfile << "<tr>";
-        
-        f_outfile << "<td>" << info.time << "</td>";
-        f_outfile << "<td>" << info.term << "</td>";
-        f_outfile << "<td>" << info.site << "</td>";
-        f_outfile << "<td>" << info.count<< "</td>";
-        
-        f_outfile << "</tr>";
-        */
+        f_outfile << "    data.push({" << endl
+                  << "      time: '" << info.time << "'," << endl
+                  << "      term: '" << info.term << "'," << endl
+                  << "      site: '" << info.site << "'," << endl
+                  << "      count: " << info.count << "," << endl
+                  << "    });" << endl
+                  ;
     }
     
     return 0;
@@ -324,23 +335,24 @@ void create_html_header(int file_num) {
         cout << "could not open file to write output, exiting" << endl;
         exit(1);
     }
-    f_outfile << "<!DOCTYPE html><html><head><title>Keyword Krawler</title>";
-    
-    f_outfile << "<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.3.0/css/mdb.min.css\">";
 
-    f_outfile << "<script type=\"text/javascript\" charset=\"utf8\" src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js\"></script>";
-    f_outfile << "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js\"></script>";
-
-    f_outfile << "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.3.0/js/mdb.min.js\"></script>";
-
-    //f_outfile << "<script>$(document).ready(function(){$('#example').DataTable();});</script>";
-    
-    //f_outfile << "</head><body><table id=\"example\" class=\"display\" cellspacing=\"0\" width=\"100%\"><thead><tr>";
-
-    //f_outfile << "<th>Time</th><th>Phrase</th><th>Site</th><th>Count</th></tr></thead>";
-    f_outfile << "</head><body><canvas id='myChart'></canvas><script>";
-
-    f_outfile << "var labelArray = [];" << "var dataArray = [];";
+    f_outfile << "<!DOCTYPE html>" << endl
+              << "<html>" << endl
+              << "<head>" << endl
+              << "  <title>Keyword Krawler</title>" << endl
+              << "  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.3.0/css/mdb.min.css\">" << endl
+              << "  <script src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js\"></script>" << endl
+              << "  <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.3.0/js/mdb.min.js\"></script>" << endl
+              << "</head>" << endl
+              << "<body>" << endl
+              << "  <canvas id='myChart'></canvas>" << endl
+              << "  <script>" << endl
+              << "    var data = [];" << endl
+              << "    var labels = [];" << endl
+              << "    var dataDict = [];" << endl
+              << "    var datasets = [];" << endl
+              << "    var option = {responsive: true};" << endl
+              ;
 }
 
 int main(int argc, const char * argv[]) {
