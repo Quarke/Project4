@@ -157,19 +157,22 @@ void configure(string config){
 }
 
 void handle_exit(int sig) {
+    cout << "Cleaning up" << endl;
     fetch_looping = false;
     parse_looping = false;
+    parse_cv.notify_all();
+    fetch_cv.notify_all();
     
     for(int i = 0; i < NUM_FETCH; i++){
-        int rc = pthread_cancel(fetch_threads[i]);
+        int rc = pthread_join(fetch_threads[i], NULL);
         assert(rc == 0);
     }
     for(int i = 0; i < NUM_PARSE; i++){
-        int rc = pthread_cancel(parse_threads[i]);
+        int rc = pthread_join(parse_threads[i], NULL);
         assert(rc == 0);
     }
     
-    int rc = pthread_cancel(output_thread);
+    int rc = pthread_join(output_thread, NULL);
     assert(rc == 0);
     
     curl_global_cleanup();
