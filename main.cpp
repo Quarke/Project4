@@ -166,13 +166,23 @@ void handle_alarm(int sig){
     file_num++;
     
     f_outfile << "    for(var i=0; i < data.length; i++) {" << endl
-              << "      obj = data[i];" << endl
+              << "      var obj = data[i];" << endl
+              << "      var r = parseInt(Math.random() * 255);" << endl
+              << "      var g = parseInt(Math.random() * 255);" << endl
+              << "      var b = parseInt(Math.random() * 255);" << endl
+              << "      var light_color = 'rgba(' + r + ', ' + g + ', ' + b + ', 0.2)';" << endl
+              << "      var color = 'rgba(' + r + ', ' + g + ', ' + b + ', 1.0)';" << endl
               << "      labels.push(obj.term);" << endl
               << "      if (dataDict[obj.site] === undefined) {" << endl
               << "        dataDict[obj.site] = {" << endl
               << "          label: obj.site," << endl
               << "          data: []," << endl
-              << "          fillColor: '#'+Math.random().toString(16).substr(-6)" << endl
+              << "          fillColor: light_color," << endl
+              << "          strokeColor: color," << endl
+              << "          pointColor: color," << endl
+              << "          pointStrokeColor: '#fff'," << endl
+              << "          pointHighlightFill: '#fff'," << endl
+              << "          pointHighlightStroke: color" << endl
               << "        }" << endl
               << "      }" << endl
               << "      dataDict[obj.site].data.push(obj.count);" << endl
@@ -188,6 +198,7 @@ void handle_alarm(int sig){
               << "    $(function() {" << endl
               << "      var ctx = document.getElementById('myChart').getContext('2d');" << endl
               << "      var myRadarChart = new Chart(ctx).Radar(data,option); " << endl
+              << "      document.getElementById('legendDiv').innerHTML = myRadarChart.generateLegend();" << endl
               << "    });" << endl
               << "  </script>" << endl
               << "</body>" << endl
@@ -343,8 +354,23 @@ void create_html_header(int file_num) {
               << "  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.3.0/css/mdb.min.css\">" << endl
               << "  <script src=\"https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js\"></script>" << endl
               << "  <script src=\"https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.3.0/js/mdb.min.js\"></script>" << endl
+              << "  <style>" << endl
+              << "    ul.radar-legend {" << endl
+              << "      text-align: center;" << endl
+              << "      margin-top: 2rem;" << endl
+              << "    }" << endl
+              << "    ul.radar-legend li {" << endl
+              << "      display: inline-block;" << endl
+              << "      margin-right: 10px;" << endl
+              << "    }" << endl
+              << "    ul.radar-legend li span{" << endl
+              << "      padding: 5px 10px;" << endl
+              << "      color: #fff;" << endl
+              << "    }" << endl
+              << "  </style>" << endl
               << "</head>" << endl
               << "<body>" << endl
+              << "  <div id='legendDiv'></div>" << endl
               << "  <canvas id='myChart'></canvas>" << endl
               << "  <script>" << endl
               << "    var data = [];" << endl
