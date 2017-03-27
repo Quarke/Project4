@@ -1,5 +1,7 @@
 CONFIGURATION FILE PARAMETERS
 
+PARTNERS: tflanag2 and dmattia
+
 Parameter       Description                                                 Default
 PERIOD_FETCH    The time (in seconds) between fetches of the various sites  180
 NUM_FETCH       Number of fetch threads (1 to 8)                            1
