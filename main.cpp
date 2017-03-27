@@ -201,6 +201,9 @@ void handle_exit(int sig) {
     << "      dataDict[obj.site].data.push(obj.count);" << endl
     << "    }" << endl
     << "    labels = Array.from(new Set(labels));" << endl
+    << "    if (datasets.length == 0) {" << endl
+    << "      $('#legendDiv').text('No data found');" << endl
+    << "    }" << endl
     << "    for (var key in dataDict) {" << endl
     << "      datasets.push(dataDict[key]);" << endl
     << "    }" << endl
