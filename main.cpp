@@ -26,6 +26,8 @@ using namespace std;
 //function declarations
 template<typename Out>
 void split(const std::string &s, char delim, Out result);
+
+void removeBetweenStrings(const std::string &s, const std::string startRemove, const std::string endRemove);
 vector<string> split(const string &s, char delim);
 void configure(string config);
 void handle_exit(int sig);
@@ -79,6 +81,26 @@ condition_variable parse_cv;
 queue<OUTPUT> output_queue;
 mutex output_m;
 condition_variable output_cv;
+
+/**
+ * Removes all characters from a string falling between two substrings.
+ * @param s The string to remove characters from
+ * @param startRemove the substring to start removing characters at
+ * @param endRemove the substring to end removing characters at
+ */
+void removeBetweenStrings(std::string &s, const std::string startRemove, const std::string endRemove) {
+  size_t startPos = s.find(startRemove, 0);
+  size_t endPos = s.find(endRemove, 0);
+  while( startPos != std::string::npos && endPos != std::string::npos ) {
+    if (endPos > startPos) {
+      s.erase(startPos, endPos - startPos + 1);
+      endPos = s.find(endRemove, endPos);
+      startPos = s.find(startRemove, startPos);
+    } else {
+      endPos = s.find(endRemove, endPos);
+    }
+  }
+}
 
 template<typename Out>
 void split(const std::string &s, char delim, Out result) {
@@ -248,11 +270,21 @@ void * parse_website(void * v){
         
         strftime(time_buffer, sizeof(time_buffer),"%d-%m-%Y %I:%M:%S",timeinfo);
         string time_str(time_buffer);
-        int counts[searches.size() ];
+        int counts[searches.size()];
         
         for(int i =  0; i < (int)searches.size(); i++){
             
             int count = 0;
+
+            // Remove all html comments
+            removeBetweenStrings(info.content, "<!--", "-->");
+            // Remove head tag
+            removeBetweenStrings(info.content, "<head>", "</head>");
+            // Remove inline javascript
+            removeBetweenStrings(info.content, "<script>", "</script>");
+            // Remove all remaining tags
+            removeBetweenStrings(info.content, "<", ">");
+
             size_t nPos = info.content.find(searches[i], 0); // fist occurrence
             while(nPos != string::npos)
             {
@@ -260,6 +292,7 @@ void * parse_website(void * v){
                 nPos = info.content.find(searches[i], nPos+1);
             }
             counts[i] = count;
+
             OUTPUT o;
             o.time = time_str;
             o.term = searches[i];
@@ -382,7 +415,6 @@ void create_html_header(int file_num) {
 }
 
 int main(int argc, const char * argv[]) {
-    
     if (argc < 2){
         cout << "No configfile file provided, exiting" << endl;
         exit(1);
@@ -402,7 +434,7 @@ int main(int argc, const char * argv[]) {
     //setup curl
     curl_global_init(CURL_GLOBAL_ALL);
     
-    /* get contents of sites file */
+    // get contents of sites file
     
     ifstream f_sites(SITE_FILE);
 
@@ -419,9 +451,8 @@ int main(int argc, const char * argv[]) {
             sites.push_back(line);
         }
     }
-    /* end of sites file */
     
-    /* get contents of search file */
+    // get contents of search file
     ifstream f_search(SEARCH_FILE);
     
     if(!f_search){
@@ -436,10 +467,10 @@ int main(int argc, const char * argv[]) {
             searches.push_back(line);
         }
     }
-    /* end of search file */
+    // end of search file
     
     
-    /* create threads for both fetch and parse*/
+    // create threads for both fetch and parse
     fetch_threads = (pthread_t*)malloc(NUM_FETCH * sizeof(pthread_t));
     parse_threads = (pthread_t*)malloc(NUM_PARSE * sizeof(pthread_t));
     
