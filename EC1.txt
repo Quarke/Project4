@@ -1,1 +1,1 @@
-We used the file write option to write full html files with all the included libraries and functions embedded. To view a file simply open the html, the visual should display in entirety.
+We used the file write option to write full html files with all the included libraries and functions embedded. To view a file simply open the html, the visual should display in entirety. We used the latest version of Chrome for testing.
