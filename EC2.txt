@@ -1,0 +1,2 @@
+We made our parser html aware by removing sections of the web search return that are not actual text. This includes script tags, header information, and hyperlinks. Urls are visible on the page so 
+we left the plain text of those alone. 

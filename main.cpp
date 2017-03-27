@@ -136,23 +136,18 @@ void configure(string config){
         cout << params[0] << " : "  << params[1] << endl;
 
         if(!params[0].compare("PERIOD_FETCH")){
-            cout << params[0] << " -> "  << params[1] << endl;
             PERIOD_FETCH = stoi(params[1]);
         }
         else if(!params[0].compare("NUM_FETCH")){
-            cout << params[0] << " -> " << params[1] << endl;
             NUM_FETCH = stoi(params[1]);
         }
         else if(!params[0].compare("NUM_PARSE")){
-            cout << params[0] << " -> " << params[1] << endl;
             NUM_PARSE = stoi(params[1]);
         }
         else if(!params[0].compare("SEARCH_FILE")){
-            cout << params[0] << " -> " << params[1] << endl;
             SEARCH_FILE = params[1];
         }
         else if(!params[0].compare("SITE_FILE")){
-            cout << params[0] << " -> " << params[1] << endl;
             SITE_FILE = params[1];
         }
         else{
@@ -180,6 +175,45 @@ void handle_exit(int sig) {
     curl_global_cleanup();
 
     do_task = false;
+    f_outfile << "    for(var i=0; i < data.length; i++) {" << endl
+    << "      var obj = data[i];" << endl
+    << "      var r = parseInt(Math.random() * 255);" << endl
+    << "      var g = parseInt(Math.random() * 255);" << endl
+    << "      var b = parseInt(Math.random() * 255);" << endl
+    << "      var light_color = 'rgba(' + r + ', ' + g + ', ' + b + ', 0.2)';" << endl
+    << "      var color = 'rgba(' + r + ', ' + g + ', ' + b + ', 1.0)';" << endl
+    << "      labels.push(obj.term);" << endl
+    << "      if (dataDict[obj.site] === undefined) {" << endl
+    << "        dataDict[obj.site] = {" << endl
+    << "          label: obj.site," << endl
+    << "          data: []," << endl
+    << "          fillColor: light_color," << endl
+    << "          strokeColor: color," << endl
+    << "          pointColor: color," << endl
+    << "          pointStrokeColor: '#fff'," << endl
+    << "          pointHighlightFill: '#fff'," << endl
+    << "          pointHighlightStroke: color" << endl
+    << "        }" << endl
+    << "      }" << endl
+    << "      dataDict[obj.site].data.push(obj.count);" << endl
+    << "    }" << endl
+    << "    labels = Array.from(new Set(labels));" << endl
+    << "    for (var key in dataDict) {" << endl
+    << "      datasets.push(dataDict[key]);" << endl
+    << "    }" << endl
+    << "    var data = {" << endl
+    << "      labels: labels," << endl
+    << "      datasets: datasets," << endl
+    << "    };" << endl
+    << "    $(function() {" << endl
+    << "      var ctx = document.getElementById('myChart').getContext('2d');" << endl
+    << "      var myRadarChart = new Chart(ctx).Radar(data,option); " << endl
+    << "      document.getElementById('legendDiv').innerHTML = myRadarChart.generateLegend();" << endl
+    << "    });" << endl
+    << "  </script>" << endl
+    << "</body>" << endl
+    << "</html>" << endl
+    ;
     f_outfile.close();
     exit(1);
 }
@@ -324,24 +358,33 @@ void * fetch_website(void * v){
         
         CURL * curl;
         curl = curl_easy_init();
-        
+        long http_code = 0;
+
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &stream);
+
         
         curl_easy_perform(curl);
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
         curl_easy_cleanup(curl);
         
         string output = stream.str();
         
-        WEBSITE info;
-        info.content = output;
-        info.url = url;
+        if( http_code >= 300 ){
+            cout << "Error or timeout on retrieving website." << endl;
+            cout << "Website: " << url << ", Status code: " << http_code << endl;
+        }
+            WEBSITE info;
+            info.content = output;
+            info.url = url;
+            
+            unique_lock<mutex> parse_guard(parse_m);
+            parse_queue.push(info);
+            parse_guard.unlock();
+            parse_cv.notify_all();
         
-        unique_lock<mutex> parse_guard(parse_m);
-        parse_queue.push(info);
-        parse_guard.unlock();
-        parse_cv.notify_all();
     }
     
     return 0;
